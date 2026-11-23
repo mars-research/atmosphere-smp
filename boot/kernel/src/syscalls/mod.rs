@@ -692,6 +692,11 @@ extern "C" fn syscall_dispatch(regs: &mut Registers) {
             regs.rax = 0;
             return;
         }
+        vsys::NR_DEBUG_TSC_HZ => {
+            let (hz, source) = crate::boot::tsc_hz();
+            (regs.rax, regs.rdx) = (hz, source as u64);
+            return;
+        }
         vsys::NR_SCHEDULE => {
             regs.rax = 0;
             schedule_from_running();

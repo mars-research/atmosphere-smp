@@ -42,6 +42,8 @@ pub const NR_DEBUG_NULL: usize = 36;
 pub const NR_PCI_INFO: usize = 55;
 /// Reads the loader's BAR slot `i` (see `sys_pci_bar`); `i` is also the kernel's BAR-table index.
 pub const NR_PCI_BAR: usize = 56;
+/// The kernel's TSC rate in Hz and its source (see `sys_debug_tsc_hz`).
+pub const NR_DEBUG_TSC_HZ: usize = 62;
 // ---- verified entries (SystemCalls.md section 14) ----
 pub const NR_ALLOC_QUOTA_4K: usize = 2;
 pub const NR_SCHEDULE: usize = 3;
@@ -498,6 +500,13 @@ pub unsafe fn sys_unmap_pci_bar_2m(va: usize) -> isize {
 
 pub unsafe fn sys_debug_null(force_iret: bool) -> isize {
     syscall1(NR_DEBUG_NULL, force_iret as usize).rax
+}
+
+/// The TSC rate in Hz that the kernel found at boot, and its source: 0 assumed (3 GHz), 1 CPUID 16H, 2 CPUID 4000_0010H,
+/// 3 measured against the PIT. User mode cannot measure it itself: it has no I/O privilege to reach the PIT.
+pub unsafe fn sys_debug_tsc_hz() -> (u64, usize) {
+    let r = syscall0(NR_DEBUG_TSC_HZ);
+    (r.rax as u64, r.rdx)
 }
 
 pub unsafe fn sys_pci_attach_dma(bus: usize, dev: usize, fun: usize) -> isize {

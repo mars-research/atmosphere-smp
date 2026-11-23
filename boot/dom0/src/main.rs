@@ -608,6 +608,7 @@ pub extern "C" fn _start() -> ! {
         unsafe { sys_debug_exit(1) };
     }
     log::info!("self-test: debug_null ok");
+    log::info!("self-test: debug_tsc_hz {:?} (Hz, source)", unsafe { sys_debug_tsc_hz() });
     let has_1g = test_memory();
     test_iommu();
     test_io();
