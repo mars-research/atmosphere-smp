@@ -9,6 +9,9 @@ publish = false
 [features]
 # Never arms the LAPIC timer (`syscalls::start_timer`), for timing runs comparable to kernels without one.
 no-timer = []
+# Runs with CR4.PCIDE clear and never executes INVPCID, for CPUs and emulators without them (QEMU TCG): every cr3 load
+# flushes all non-global translations, a PCID flush reloads cr3, and a per-address flush uses `invlpg`.
+no-pcid = ["VeriFlat/no-pcid"]
 
 [dependencies]
 astd = { path = "../astd", features = ["kernel"] }

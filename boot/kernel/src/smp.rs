@@ -4,12 +4,13 @@
 //! boots through the real-mode trampoline at 0x7000, initializes its per-CPU state, and parks Off:
 //! the verified model starts every CPU but 0 Off, and `cpu_online` wakes it.
 
+#[cfg(not(feature = "no-pcid"))]
 use core::arch::asm;
 
 use crate::cpu::{self, MAX_CPUS};
 use crate::{gdt, interrupt, syscalls};
 
-/// CR4.PCIDE: aloader sets it on the BSP; the trampoline does not.
+/// CR4.PCIDE: aloader sets it on the BSP; the trampoline does not. Feature `no-pcid` leaves it clear.
 const CR4_PCIDE: u64 = 1 << 17;
 
 /// TSC cycles to wait for an AP to report in.
@@ -48,6 +49,7 @@ pub unsafe fn start_aps() {
 extern "C" fn ap_main(cpu_id: u64) -> ! {
     let cpu_id = cpu_id as usize;
     unsafe {
+        #[cfg(not(feature = "no-pcid"))]
         asm!("mov {t}, cr4", "or {t}, {pcide}", "mov cr4, {t}", t = out(reg) _, pcide = const CR4_PCIDE, options(nostack));
         cpu::init_cpu(cpu_id);
         gdt::init_cpu();

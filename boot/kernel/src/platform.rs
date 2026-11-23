@@ -75,6 +75,35 @@ pub fn has_invpcid() -> bool {
     core::arch::x86_64::__cpuid_count(7, 0).ebx & (1 << 10) != 0
 }
 
+/// CR4.PCIDE: aloader sets it on CPU 0 when the CPU has PCID.
+#[cfg(feature = "no-pcid")]
+const CR4_PCIDE: u64 = 1 << 17;
+
+/// Feature `no-pcid`: clears CR4.PCIDE on CPU 0, which flushes every TLB entry, so every cr3 load tags PCID 0 and
+/// flushes all non-global translations. The APs never set it (`smp::ap_main`).
+#[cfg(feature = "no-pcid")]
+pub fn disable_pcid() {
+    unsafe {
+        asm!("mov {t}, cr4", "and {t}, {mask}", "mov cr4, {t}", t = out(reg) _, mask = in(reg) !CR4_PCIDE, options(nostack));
+    }
+    log::warn!("feature no-pcid: CR4.PCIDE clear, every cr3 load flushes the TLB");
+}
+
+/// Feature `no-pcid`: the TLB holds only the translations of the loaded cr3, all under PCID 0, so a cr3 reload
+/// invalidates a superset of what INVPCID type 1 invalidates for `pcid`.
+#[cfg(feature = "no-pcid")]
+fn invpcid_single_context(_pcid: usize) {
+    unsafe { asm!("mov {t}, cr3", "mov cr3, {t}", t = out(reg) _, options(nostack, preserves_flags)) };
+}
+
+/// Feature `no-pcid`: `invlpg` drops the translations of `va` (a large page's included) and the paging-structure caches
+/// of the loaded cr3, the only ones the TLB holds, a superset of what INVPCID type 0 drops for `pcid`.
+#[cfg(feature = "no-pcid")]
+fn invpcid_individual(_pcid: usize, va: usize) {
+    unsafe { asm!("invlpg [{}]", in(reg) va, options(nostack, preserves_flags)) };
+}
+
+#[cfg(not(feature = "no-pcid"))]
 fn invpcid_single_context(pcid: usize) {
     let descriptor: [u64; 2] = [pcid as u64, 0];
     unsafe {
@@ -82,6 +111,7 @@ fn invpcid_single_context(pcid: usize) {
     }
 }
 
+#[cfg(not(feature = "no-pcid"))]
 fn invpcid_individual(pcid: usize, va: usize) {
     let descriptor: [u64; 2] = [pcid as u64, va as u64];
     unsafe {

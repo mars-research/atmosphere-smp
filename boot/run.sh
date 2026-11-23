@@ -26,6 +26,8 @@ cd "$(dirname "$0")"
 PROFILE=${PROFILE:-release}
 BUILD_FEATURES=()
 if [ -n "${NO_TIMER:-}" ]; then BUILD_FEATURES+=(--features kernel/no-timer); fi
+# QEMU TCG has neither PCID nor INVPCID: without KVM the kernel is built with feature `no-pcid`.
+if [ ! -w /dev/kvm ]; then BUILD_FEATURES+=(--features kernel/no-pcid); fi
 cargo +1.99.1 build --profile "$PROFILE" -p aloader -p kernel -p dom0 "${BUILD_FEATURES[@]}"
 OUT=target/x86_64-unknown-none/$PROFILE
 
@@ -39,7 +41,7 @@ if [ -w /dev/kvm ]; then
     ACCEL=(-enable-kvm -cpu host,+invtsc -machine q35,kernel_irqchip=split)
 else
     echo "warning: /dev/kvm not writable, falling back to TCG" >&2
-    ACCEL=(-cpu max,+pcid -machine q35)
+    ACCEL=(-cpu max -machine q35)
 fi
 
 qemu-system-x86_64 "${ACCEL[@]}" -smp ${SMP:-4} -m 2304 \

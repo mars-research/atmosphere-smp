@@ -146,7 +146,11 @@ impl CpuTLB {
                 None => final(self).spec_index((cpu_id, pcid)).is_empty() && final(self).structure_cache((cpu_id, pcid)).is_empty(),
             },
     {
+        #[cfg(not(feature = "no-pcid"))]
         let value = cr3 | pcid | if flush { 0 } else { PCID_ENABLE_MASK };
+        // Feature `no-pcid` (CR4.PCIDE clear): the root alone; the load flushes every non-global translation of every PCID.
+        #[cfg(feature = "no-pcid")]
+        let value = cr3;
         unsafe { core::arch::asm!("mov cr3, {}", in(reg) value, options(nostack, preserves_flags)); }
         hardware.hardware = Ghost((cr3, pcid));
         if flush {

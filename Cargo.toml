@@ -45,6 +45,9 @@ vstd = { path = "verus/source/vstd", default-features = false, features = ["allo
 default = ["std"]
 std = ["vstd/std"]
 split-crates = []
+# For CPUs and emulators without PCID (QEMU TCG): `CpuTLB::write_cr3_pcid` loads cr3 without PCID bits, so every cr3
+# load flushes all non-global translations. Only the boot kernel's feature `no-pcid` turns it on; never verified.
+no-pcid = []
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(verus_keep_ghost)'] }

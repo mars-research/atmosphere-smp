@@ -13,6 +13,8 @@ vstd = { path = "../../verus/source/vstd" }
 [features]
 default = ["split-crates"]
 split-crates = []
+# Declared only so that `cfg(feature = "no-pcid")` in `CpuTLB::write_cr3_pcid` is an expected cfg; see the root crate.
+no-pcid = []
 
 [package.metadata.verus]
 verify = true

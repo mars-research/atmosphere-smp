@@ -169,8 +169,8 @@ pub extern "C" fn main() -> ! {
             );
         }
     } else {
-        // Kept bootable for emulators without PCID (QEMU TCG): the kernel faults at its first
-        // PCID-tagged CR3 write, after the boot glue has run.
+        // Kept bootable for emulators without PCID (QEMU TCG): a kernel built with feature
+        // `no-pcid` runs without it; any other kernel stops at its INVPCID check.
         log::warn!("CPU does not support PCID, which VeriFlat requires");
     }
 

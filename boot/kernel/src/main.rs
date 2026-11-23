@@ -55,7 +55,10 @@ pub extern "C" fn _start(boot_info: *const BootInfo) -> ! {
 
     log::info!("VeriFlat trap layer: command line {:?}", boot::get_raw_command_line());
 
+    #[cfg(not(feature = "no-pcid"))]
     assert!(platform::has_invpcid(), "VeriFlat's remote TLB flush needs INVPCID");
+    #[cfg(feature = "no-pcid")]
+    platform::disable_pcid();
     unsafe {
         glue::init_kernel(boot::get_boot_info());
         iommu::init(glue::iommu_root_table());
